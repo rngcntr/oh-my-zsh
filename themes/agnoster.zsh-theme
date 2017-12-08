@@ -89,8 +89,8 @@ prompt_git() {
   (( $+commands[git] )) || return
   local PL_BRANCH_CHAR
   () {
-    local LC_ALL="" LC_CTYPE="en_US.UTF-8"
-    PL_BRANCH_CHAR=$'\ue0a0'         # 
+    #local LC_ALL="" LC_CTYPE="en_US.UTF-8"
+    PL_BRANCH_CHAR="\ue0a0"         # \ue0a0 
   }
   local ref dirty mode repo_path
   repo_path=$(git rev-parse --git-dir 2>/dev/null)
@@ -226,3 +226,49 @@ build_prompt() {
 }
 
 PROMPT='%{%f%b%k%}$(build_prompt) '
+
+#
+# FROM HERE: https://gist.github.com/smileart/3750104
+#
+
+# Original theme https://github.com/agnoster zsh theme
+
+ZSH_THEME_GIT_PROMPT_DIRTY='±'
+
+function _git_prompt_info() {
+  ref=$(git symbolic-ref HEAD 2> /dev/null) || ref="➦ $(git show-ref --head -s --abbrev |head -n1 2> /dev/null)"
+  echo "${ref/refs\/heads\// }$(parse_git_dirty)"
+}
+
+function _git_info() {
+  if $(git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
+    local BG_COLOR=green
+    if [[ -n $(parse_git_dirty) ]]; then
+      BG_COLOR=yellow
+      FG_COLOR=black
+    fi
+
+    if [[ ! -z $(git ls-files --other --exclude-standard 2> /dev/null) ]]; then
+        BG_COLOR=red
+        FG_COLOR=white
+    fi
+    echo "%{%K{$BG_COLOR}%}%{%F{$FG_COLOR}%} $(_git_prompt_info) %{%F{$BG_COLOR}%K{blue}%}"
+  else
+    echo "%{%K{blue}%}"
+  fi
+}
+
+function virtualenv_info {
+    [ $VIRTUAL_ENV ] && echo '('`basename $VIRTUAL_ENV`') '
+}
+
+PROMPT_HOST='%{%b%F{gray}%K{black}%} %(?.%{%F{green}%}✔.%{%F{red}%}✘)%{%F{yellow}%} %n %{%F{black}%}'
+PROMPT_DIR='%{%F{white}%} %(3~|.../%2~|%~)%  '
+PROMPT_SU='%(!.%{%k%F{blue}%K{black}%}%{%F{yellow}%} ⚡ %{%k%F{black}%}.%{%k%F{blue}%})%{%f%k%b%}'
+if [[ "$USER" == "root" ]]; then
+PROMPT='yo'
+fi
+
+PROMPT='%{%f%b%k%}$PROMPT_HOST$(_git_info)$PROMPT_DIR$PROMPT_SU
+$(virtualenv_info)❯ '
+RPROMPT='%{$fg[green]%}[%*]%{$reset_color%}'
